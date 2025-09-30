@@ -19,7 +19,30 @@ All demos and examples are sanitized.
 
 ## Quickstart
 
+Install the repository:
+
 ```bash
-# Example run (placeholder)
-python3 darkcrawler.py # Check tor conectivity
+# Clone the repository
+git clone https://github.com/paranoidsec/paranoid-darkcrawler.git
+# Install dependencies
+cd paranoid-darkcrawler
+python -m venv venv
+. venv/bin/activate
+pip install -r requirements.txt
 ```
+
+Run a tor connectivity check:
+
+```bash
+python3 darkcrawler.py --check-tor
+```
+
+Fetch a single page through TOR and save the results to a file:
+
+```bash
+python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion/wiki/index.php/Main_Page --out output.html
+```
+
+**Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`
+
+See [CHANGELOG](CHANGELOG.md) for recent updates.
