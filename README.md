@@ -9,6 +9,7 @@ All demos and examples are sanitized.
 ---
 
 ## Features (planned)
+
 - Crawl darkweb sites through Tor (SOCKS5 proxy).
 - Configurable depth and rate limits.
 - Extract basic metadata (links, email-like strings, headers).
@@ -16,7 +17,9 @@ All demos and examples are sanitized.
 
 ---
 
-## Quickstart (coming soon)
+## Quickstart
+
 ```bash
 # Example run (placeholder)
-python3 darkcrawler.py --target http://example.onion --depth 2 --out results.json
+python3 darkcrawler.py # Check tor conectivity
+```
