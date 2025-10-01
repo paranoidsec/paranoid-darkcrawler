@@ -45,4 +45,21 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 
 **Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`
 
+## Example outpu (sanitized)
+
+```json
+[
+  {
+    "url": "http://exampleonion.onion",
+    "title": "Example Onion Site",
+    "description": "Sample description",
+    "emails": ["contact@example.onion"],
+    "links": [
+      "http://exampleonion.onion/login",
+      "http://exampleonion.onion/about"
+    ]
+  }
+]
+```
+
 See [CHANGELOG](CHANGELOG.md) for recent updates.
