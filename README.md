@@ -40,7 +40,7 @@ python3 darkcrawler.py --check-tor
 Fetch a single page through TOR and save the results to a file:
 
 ```bash
-python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion/wiki/index.php/Main_Page --out output.html
+python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion/ --out results.json --csv
 ```
 
 **Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`
