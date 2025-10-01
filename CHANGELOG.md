@@ -11,3 +11,10 @@
 
 - CLI flags: `--check-tor`, `--target`, `--out`
 - Basic single-page fetch via Tor and save to file
+
+## [v0.2.0] - 2025-10-01
+
+### Added
+
+- Metadata extraction: title, description, links, email-like strings
+- JSON export (default) and optional CSV export (--csv)
