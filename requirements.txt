@@ -1,2 +1,3 @@
 requests[socks]
 argparse
+bs4
