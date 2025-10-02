@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-import os, re, csv, json, argparse, requests
+import os, re, csv, json, argparse, requests, time
+from urllib.parse import urljoin, urlparse
+from collections import deque
 from datetime import datetime
 from bs4 import BeautifulSoup
 
@@ -14,6 +16,15 @@ session.proxies = {
 ## Results folder
 results_folder="results"
 
+# Check if the URL is on the same host
+def is_same_host(start_url, new_url):
+    return urlparse(start_url).hostname == urlparse(new_url).hostname
+
+# Check if infinite crawl
+def unbounded(x: int) -> bool:
+    return x < 0
+
+# Check if connected to TOR network
 def test_tor_connection(timeout=15):
     # Test if the Tor SOCKS5 proxy is working.
     try:
@@ -29,18 +40,110 @@ def test_tor_connection(timeout=15):
         return False
 
 # Get the content of a webpage
-def fetch_page(url, out_file, timeout=30):
-    # Fetch a single page via TOR and save HTML to a file.
+def fetch_page(url, timeout=30):
+    # Fetch a single page via TOR
     try:
-        print(f"[*] Fetching {url}...")
         r = session.get(url, timeout=timeout)
-        path = os.path.join(results_folder, out_file)
-
-        # Extract the metadata from the html content
-        metadata = extract_metadata(r.text, url)
-        save_results([metadata], path, csv_mode=args.csv)
+        return r.text
     except Exception as e:
         print(f"[!] Failed to fetch {url}: {e}")
+        return ""
+
+def save_state(state_file, visited, queue, results):
+    # Save current crawl state to JSON file.
+    try:
+        data = {
+            "visited": list(visited),
+            "queue": list(queue),
+        }
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"[!] Failed to save state: {e}")
+
+def load_state(state_file):
+    # Load crawl state from JSON file.
+    try:
+        with open(state_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        visited = set(data.get("visited", []))
+        queue = deque(data.get("queue", []))
+        print(f"[*] Resumed state from {state_file} ({len(visited)} visited, {len(queue)} queued).")
+        return visited, queue
+    except Exception as e:
+        print(f"[!] Failed to load state: {e}")
+        return set(), deque()
+
+# Crawl the webpage to find links and extract metadata from those links
+def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, state_file=None):
+    # Set the timer
+    start_ts = time.time()
+    max_runtime_seconds = None if unbounded(max_runtime_minutes) else max_runtime_minutes * 60
+
+    # Load previous state if exists
+    visited, queue, results = set(), deque(), []
+    if state_file and os.path.exists(state_file):
+        visited, queue = load_state(state_file)
+    if not queue:
+        queue.append((start_url, 0))
+
+    try:
+        while queue:
+            # stop if max-pages reached (unless unbounded)
+            if not unbounded(max_pages) and len(visited) >= max_pages:
+                print("[*] Reached --max-pages limit, stopping.")
+                break
+
+            # stop if runtime budget spent (unless unbounded)
+            if max_runtime_seconds is not None and (time.time() - start_ts) >= max_runtime_seconds:
+                print("[*] Reached --max-runtime budget, stopping.")
+                break
+
+            url, level = queue.popleft()
+
+            # depth gate (skip only when depth is bounded)
+            if not unbounded(depth) and level > depth:
+                continue
+            if url in visited:
+                continue
+
+            visited.add(url)
+            print(f"[*] ({level}/{depth if not unbounded(depth) else '∞'}) Fetching: {url}")
+
+            html = fetch_page(url)
+            if html:
+                meta = extract_metadata(html, url)
+                results.append(meta)
+
+                if unbounded(depth) or level < depth:
+                    # enqueue same-host links
+                    for link in get_absolute_links(start_url, meta["links"]):
+                        if is_same_host(start_url, link) and link not in visited:
+                            queue.append((link, level + 1))
+
+            # save state after each page (if requested)
+            if state_file:
+                save_state(state_file, visited, queue, results)
+
+            time.sleep(delay)
+
+    except KeyboardInterrupt:
+        print("\n[!] Interrupted by user. Writing partial results…")
+        if state_file:
+            save_state(state_file, visited, queue, results)
+            print(f"[*] State saved to {state_file}")
+
+    return results
+
+# Get the absolute links for each link retrieved
+def get_absolute_links(base_url, links):
+    absolute_links = []
+    for link in links:
+        if link.startswith("#") or link.lower().startswith("javascript:"):
+            continue
+        absolute = urljoin(base_url, link)
+        absolute_links.append(absolute)
+    return absolute_links
 
 # Extract metadata from the webpage html code
 def extract_metadata(html, url):
@@ -83,6 +186,11 @@ if __name__ == "__main__":
     parser.add_argument("--target", help="URL to fetch (default: Tor check page)")
     parser.add_argument("--out", default=f"page_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", help="Output file for fetched page")
     parser.add_argument("--csv", action="store_true", help="Also exports the results to CSV")
+    parser.add_argument("--depth", type=int, default=0, help="Crawl depth (0 = only target, positive N = levels deep, -1 = unlimited)")
+    parser.add_argument("--max-pages", type=int, default=50, help="Max pages to fetch (positive), or -1 for unlimited")
+    parser.add_argument("--delay", type=float, default=2.0, help="Delay between requests (default 2 sec)")
+    parser.add_argument("--max-runtime", type=int, default=-1, help="Max runtime in minutes (-1 = unlimited)")
+    parser.add_argument("--state-file", default=None, help="Path to save/load crawl state (JSON). Use to resume long runs.")
     args = parser.parse_args()
 
     print("=== Paranoid DarkCrawler ===")
@@ -94,7 +202,16 @@ if __name__ == "__main__":
         if not os.path.exists(results_folder):
             os.makedirs(results_folder)
         if test_tor_connection():
-            fetch_page(args.target, args.out)
+            if unbounded(args.depth) and unbounded(args.max_pages) and unbounded(args.max_runtime):
+                print("[!] WARNING: depth, max-pages, and max-runtime are all unlimited.")
+                print("    This may run indefinitely. Consider setting --max-runtime or --max-pages and keep --delay >= 2s.")
+            path = os.path.join(results_folder, args.out)
+            if args.state_file:
+                state = os.path.join(results_folder, args.state_file)
+                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, state)
+            else:
+                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime)
+            save_results(results, path, csv_mode=args.csv)
         else:
             print("[!] Aborting fetch due to Tor failure.")
     else:

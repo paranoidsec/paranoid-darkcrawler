@@ -40,12 +40,19 @@ python3 darkcrawler.py --check-tor
 Fetch a single page through TOR and save the results to a file:
 
 ```bash
+# Fetch a single page
 python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion/ --out results.json --csv
+
+# Start an unbounded crawl but save state every step
+python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --depth -1 --max-pages -1 --delay 3 --state-file state.json
+
+# Resume later (restarts where it stopped)
+python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --depth -1 --max-pages -1 --delay 3 --state-file state.json
 ```
 
 **Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`
 
-## Example outpu (sanitized)
+## Example output (sanitized)
 
 ```json
 [

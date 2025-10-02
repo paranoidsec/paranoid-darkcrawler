@@ -18,3 +18,13 @@
 
 - Metadata extraction: title, description, links, email-like strings
 - JSON export (default) and optional CSV export (--csv)
+
+## [v0.3.2] - 2025-10-02
+
+### Added
+
+- `--depth` option: crawl depth on the same target
+- `--delay` option: delay between requests
+- `--max-pages` option: maximum pages to crawl
+- `--max-runtime` option: define the maximum runtime for the crawler
+- `--state-file` option: save progress and resume long/unbounded crawls safely
