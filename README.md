@@ -37,7 +37,7 @@ Run a tor connectivity check:
 python3 darkcrawler.py --check-tor
 ```
 
-Fetch a single page through TOR and save the results to a file:
+Fetch a single, or multiple pages through TOR and save the results to a file:
 
 ```bash
 # Fetch a single page
@@ -51,6 +51,21 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 ```
 
 **Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`
+
+### CLI Flags
+
+| Flag          | Description                               | Default |
+|---------------|-------------------------------------------|---------|
+| --check-tor   | Test Tor connectivity and exit             | —       |
+| --target      | URL to start crawling                      | —       |
+| --out         | Output JSON filename                       | page_<timestamp>.json |
+| --csv         | Also export CSV alongside JSON             | off     |
+| --depth       | Crawl depth (0 = only target, -1 = unlimited) | 0 |
+| --max-pages   | Max pages to fetch (-1 = unlimited)        | 50 |
+| --delay       | Delay between requests (sec)               | 2 |
+| --max-runtime | Max runtime (minutes, -1 = unlimited)      | -1 |
+| --state-file  | Save/load crawl state for resume           | none |
+
 
 ## Example output (sanitized)
 
