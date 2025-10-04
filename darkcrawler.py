@@ -39,6 +39,20 @@ def test_tor_connection(timeout=15):
         print(f"[!] Tor connection failed: {e}")
         return False
 
+# From a given domain extract other domains different than the current
+# one
+def extract_domains_from_links(links):
+    # Return just the netloc (host:port) from each link.
+    domains = set()
+    for link in links:
+        try:
+            parsed = urlparse(link)
+            if parsed.hostname and parsed not in domains:
+                domains.add(parsed.hostname)
+        except:
+            continue
+    return domains
+
 # Get the content of a webpage
 def fetch_page(url, timeout=30):
     # Fetch a single page via TOR
@@ -75,10 +89,13 @@ def load_state(state_file):
         return set(), deque()
 
 # Crawl the webpage to find links and extract metadata from those links
-def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, state_file=None):
+def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, mode="content", state_file=None):
     # Set the timer
     start_ts = time.time()
     max_runtime_seconds = None if unbounded(max_runtime_minutes) else max_runtime_minutes * 60
+
+    # Domains Discovered
+    discovered_domains = set()
 
     # Load previous state if exists
     visited, queue, results = set(), deque(), []
@@ -115,6 +132,11 @@ def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, state_file=No
                 meta = extract_metadata(html, url)
                 results.append(meta)
 
+                # Get new domains
+                if mode == "domains":
+                    new_domains = extract_domains_from_links(meta["links"])
+                    discovered_domains.update(new_domains)
+
                 if unbounded(depth) or level < depth:
                     # enqueue same-host links
                     for link in get_absolute_links(start_url, meta["links"]):
@@ -133,7 +155,7 @@ def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, state_file=No
             save_state(state_file, visited, queue, results)
             print(f"[*] State saved to {state_file}")
 
-    return results
+    return discovered_domains if mode == "domains" else results
 
 # Get the absolute links for each link retrieved
 def get_absolute_links(base_url, links):
@@ -191,6 +213,7 @@ if __name__ == "__main__":
     parser.add_argument("--delay", type=float, default=2.0, help="Delay between requests (default 2 sec)")
     parser.add_argument("--max-runtime", type=int, default=-1, help="Max runtime in minutes (-1 = unlimited)")
     parser.add_argument("--state-file", default=None, help="Path to save/load crawl state (JSON). Use to resume long runs.")
+    parser.add_argument("--mode", choices=["content","domains"], default="content",help="Crawl mode: 'content' = fetch pages & metadata, 'domains' = only collect domains/hosts")
     args = parser.parse_args()
 
     print("=== Paranoid DarkCrawler ===")
@@ -208,10 +231,14 @@ if __name__ == "__main__":
             path = os.path.join(results_folder, args.out)
             if args.state_file:
                 state = os.path.join(results_folder, args.state_file)
-                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, state)
+                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, args.mode, state)
             else:
-                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime)
-            save_results(results, path, csv_mode=args.csv)
+                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, args.mode)
+            if args.mode == "domains":
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(sorted(list(results)), f, indent=2)
+            else:
+                save_results(results, path, csv_mode=args.csv)
         else:
             print("[!] Aborting fetch due to Tor failure.")
     else:

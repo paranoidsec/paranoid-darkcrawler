@@ -28,3 +28,9 @@
 - `--max-pages` option: maximum pages to crawl
 - `--max-runtime` option: define the maximum runtime for the crawler
 - `--state-file` option: save progress and resume long/unbounded crawls safely
+
+## [v0.4.0] - 2025-10-04
+
+### Added
+
+- New `--mode domains` to collect hostnames/domains while crawling

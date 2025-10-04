@@ -48,6 +48,9 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 
 # Resume later (restarts where it stopped)
 python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --depth -1 --max-pages -1 --delay 3 --state-file state.json
+
+# Domain discovery mode
+python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --mode domains
 ```
 
 **Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`
@@ -65,6 +68,7 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 | --delay       | Delay between requests (sec)               | 2 |
 | --max-runtime | Max runtime (minutes, -1 = unlimited)      | -1 |
 | --state-file  | Save/load crawl state for resume           | none |
+| --mode        | Discover more domains while crawling       | content |
 
 
 ## Example output (sanitized)
