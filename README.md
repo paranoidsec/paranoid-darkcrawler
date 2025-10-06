@@ -51,6 +51,10 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 
 # Domain discovery mode
 python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --mode domains
+# Domain discovery mode and write to csv
+python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --mode domains --csv
+```
+
 ```
 
 **Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`

@@ -237,6 +237,12 @@ if __name__ == "__main__":
             if args.mode == "domains":
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(sorted(list(results)), f, indent=2)
+                    if args.csv:
+                        with open(path.replace(".json", ".csv"), "w", newline="", encoding="utf-8") as f:
+                            writer = csv.writer(f)
+                            writer.writerow(["domain"])
+                            for d in sorted(list(results)):
+                                writer.writerow([d])
             else:
                 save_results(results, path, csv_mode=args.csv)
         else:
