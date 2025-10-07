@@ -34,3 +34,10 @@
 ### Added
 
 - New `--mode domains` to collect hostnames/domains while crawling
+
+## [v0.5.0] - 2025-10-07
+
+### Added
+
+- `--threads` option to fetch multiple pages in parallel (default=1)
+- `--mode both` to fetch new domains with their metadata

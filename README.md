@@ -53,9 +53,11 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --mode domains
 # Domain discovery mode and write to csv
 python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --mode domains --csv
+
+# Crawl with parallel threads (works with all modes)
+python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --threads 5
 ```
 
-```
 
 **Note**: You must have TOR running locally with the default SOCKS5 proxy `127.0.0.1:9050`
 
@@ -73,6 +75,7 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 | --max-runtime | Max runtime (minutes, -1 = unlimited)      | -1 |
 | --state-file  | Save/load crawl state for resume           | none |
 | --mode        | Discover more domains while crawling       | content |
+| --threads     | Threads to run in parallel                 | 1 |
 
 
 ## Example output (sanitized)
