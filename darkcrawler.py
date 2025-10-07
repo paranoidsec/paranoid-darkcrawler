@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os, re, csv, json, argparse, requests, time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urljoin, urlparse
 from collections import deque
 from datetime import datetime
@@ -89,7 +90,7 @@ def load_state(state_file):
         return set(), deque()
 
 # Crawl the webpage to find links and extract metadata from those links
-def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, mode="content", state_file=None):
+def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, threads, mode="content", state_file=None):
     # Set the timer
     start_ts = time.time()
     max_runtime_seconds = None if unbounded(max_runtime_minutes) else max_runtime_minutes * 60
@@ -116,34 +117,45 @@ def crawl(start_url, depth, max_pages, delay, max_runtime_minutes, mode="content
                 print("[*] Reached --max-runtime budget, stopping.")
                 break
 
-            url, level = queue.popleft()
+            # Build a batch to submit to the pool of threads
+            batch = []
+            while queue and len(batch) < threads:
+                url, level = queue.popleft()
+                # depth gate (skip only when depth is bounded)
+                if (not unbounded(depth) and level > depth) or (url in visited):
+                    continue
 
-            # depth gate (skip only when depth is bounded)
-            if not unbounded(depth) and level > depth:
-                continue
-            if url in visited:
-                continue
+                visited.add(url)
+                batch.append((url, level))
+                print(f"[*] ({level}/{depth if not unbounded(depth) else '∞'}) Fetching: {url}")
 
-            visited.add(url)
-            print(f"[*] ({level}/{depth if not unbounded(depth) else '∞'}) Fetching: {url}")
+            # Fetch in parallel
+            with ThreadPoolExecutor(max_workers=threads) as executor:
+                future_map = {executor.submit(fetch_page, url): (url, level) for (url, level) in batch}
 
-            html = fetch_page(url)
-            if html:
-                meta = extract_metadata(html, url)
-                results.append(meta)
+                for fut in as_completed(future_map):
+                    url, level = future_map[fut]
+                    html = fut.result()
+                    if html:
+                        meta = extract_metadata(html, url)
+                        results.append(meta)
 
-                # Get new domains
-                if mode == "domains":
-                    new_domains = extract_domains_from_links(meta["links"])
-                    discovered_domains.update(new_domains)
+                        # Get new domains
+                        if mode == "domains":
+                            new_domains = extract_domains_from_links(meta["links"])
+                            discovered_domains.update(new_domains)
 
-                if unbounded(depth) or level < depth:
-                    # enqueue same-host links
-                    for link in get_absolute_links(start_url, meta["links"]):
-                        if is_same_host(start_url, link) and link not in visited:
-                            queue.append((link, level + 1))
+                        if unbounded(depth) or level < depth:
+                            # enqueue same-host links
+                            for link in get_absolute_links(start_url, meta["links"]):
+                                if mode == "domains" and ".onion" in link and not is_same_host(start_url, link) and link not in visited:
+                                    queue.append((link, level + 1))
+                                elif mode == "both" and ".onion" in link and link not in visited:
+                                    queue.append((link, level + 1))
+                                elif is_same_host(start_url, link) and link not in visited:
+                                    queue.append((link, level + 1))
 
-            # save state after each page (if requested)
+            # save state after each batch (if requested)
             if state_file:
                 save_state(state_file, visited, queue, results)
 
@@ -213,7 +225,8 @@ if __name__ == "__main__":
     parser.add_argument("--delay", type=float, default=2.0, help="Delay between requests (default 2 sec)")
     parser.add_argument("--max-runtime", type=int, default=-1, help="Max runtime in minutes (-1 = unlimited)")
     parser.add_argument("--state-file", default=None, help="Path to save/load crawl state (JSON). Use to resume long runs.")
-    parser.add_argument("--mode", choices=["content","domains"], default="content",help="Crawl mode: 'content' = fetch pages & metadata, 'domains' = only collect domains/hosts")
+    parser.add_argument("--mode", choices=["content","domains", "both"], default="content",help="Crawl mode: 'content' = fetch pages & metadata, 'domains' = only collect domains/hosts, 'both' = collect new domains and fetch pages & metadata")
+    parser.add_argument("--threads", type=int, default=1,help="Number of parallel fetch threads (default=1)")
     args = parser.parse_args()
 
     print("=== Paranoid DarkCrawler ===")
@@ -231,9 +244,9 @@ if __name__ == "__main__":
             path = os.path.join(results_folder, args.out)
             if args.state_file:
                 state = os.path.join(results_folder, args.state_file)
-                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, args.mode, state)
+                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, args.threads, args.mode, state)
             else:
-                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, args.mode)
+                results = crawl(args.target, args.depth, args.max_pages, args.delay, args.max_runtime, args.threads, args.mode)
             if args.mode == "domains":
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(sorted(list(results)), f, indent=2)
