@@ -37,7 +37,14 @@ Run a tor connectivity check:
 python3 darkcrawler.py --check-tor
 ```
 
-Fetch a single, or multiple pages through TOR and save the results to a file:
+### Dark web–only by design
+
+Paranoid DarkCrawler **only crawls .onion domains**.  
+Clearnet links are automatically ignored to keep the focus on dark web OSINT.
+
+### Mixed mode: expanding across .onion sites
+
+Use `--mode both` to crawl the starting site and **expand to any new .onion domains** discovered along the way:
 
 ```bash
 # Fetch a single page
@@ -56,6 +63,9 @@ python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6o
 
 # Crawl with parallel threads (works with all modes)
 python3 darkcrawler.py --target http://zqktlwiuavvvqqt4ybvgvi7tyo4hjl5xgfuvpdf6otjiycgwqbym2qad.onion --threads 5
+
+# Discover new domains and crawl them too
+python3 darkcrawler.py --target http://exampleonion.onion --mode both --depth 2 --out fullmap.json
 ```
 
 
