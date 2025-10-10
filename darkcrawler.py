@@ -70,6 +70,7 @@ def save_state(state_file, visited, queue, results):
         data = {
             "visited": list(visited),
             "queue": list(queue),
+            "results": results,
         }
         with open(state_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
