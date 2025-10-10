@@ -176,8 +176,11 @@ def get_absolute_links(base_url, links):
     for link in links:
         if link.startswith("#") or link.lower().startswith("javascript:"):
             continue
-        absolute = urljoin(base_url, link)
-        absolute_links.append(absolute)
+        try:
+            absolute = urljoin(base_url, link)
+            absolute_links.append(absolute)
+        except Exception:
+            continue
     return absolute_links
 
 # Extract metadata from the webpage html code
