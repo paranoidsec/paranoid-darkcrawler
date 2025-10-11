@@ -187,9 +187,13 @@ def get_absolute_links(base_url, links):
 def extract_metadata(html, url):
     soup = BeautifulSoup(html, "html.parser")
     title = soup.title.string if soup.title else ""
+    meta_desc = soup.find("meta", attrs={"name": "description"})
     desc = ""
-    if soup.find("meta", attrs={"name": "description"}):
-        desc = soup.find("meta", attrs={"name": "description"})["content"]
+    if meta_desc:
+        if meta_desc.get('content'):
+            desc = meta_desc.get('content')
+        elif meta_desc.get('contents'):
+            desc = meta_desc.get('contents')
 
     links = [a.get("href") for a in soup.find_all("a", href=True)]
     emails = re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", html)
