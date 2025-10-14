@@ -26,7 +26,7 @@ def unbounded(x: int) -> bool:
     return x < 0
 
 # Check if connected to TOR network
-def test_tor_connection(timeout=15):
+def test_tor_connection(timeout=30):
     # Test if the Tor SOCKS5 proxy is working.
     try:
         r = session.get('http://check.torproject.org', timeout=timeout)
@@ -55,7 +55,7 @@ def extract_domains_from_links(links):
     return domains
 
 # Get the content of a webpage
-def fetch_page(url, timeout=30):
+def fetch_page(url, timeout=60):
     # Fetch a single page via TOR
     try:
         r = session.get(url, timeout=timeout)
